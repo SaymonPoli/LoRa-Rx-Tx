@@ -3,10 +3,9 @@
 
 void onGPIOInterrupt();
 
-volatile int gpioCounter = 0;          // Sensor counter
-unsigned long last_interrupt_time = 0; // Last time the GPIO pin was activated
-unsigned long last_tx_time = 0;        // Last time data was sent via LoRa
-bool addCounterFlag = false;
+volatile unsigned long pulseCounter = 0; // Sensor counter
+unsigned long lastInterruptTime = 0;     // Last time the GPIO pin was activated
+unsigned long lastTxTime = 0;            // Last time data was sent via LoRa
 
 String rxdata;
 volatile bool rxFlag = false;
@@ -16,7 +15,7 @@ uint64_t tx_time;
 uint64_t minimum_pause;
 
 void rx();
-void onGPIOInterrupt();
+void pulseISR();
 
 void setup()
 {
@@ -37,7 +36,7 @@ void setup()
     pinMode(GPIO_INPUT_PIN, INPUT_PULLUP); // Pull-up resistor
 
     // Attach interrupt to GPIO pin
-    attachInterrupt(digitalPinToInterrupt(GPIO_INPUT_PIN), onGPIOInterrupt, FALLING); // Adjust based on your requirements
+    attachInterrupt(digitalPinToInterrupt(GPIO_INPUT_PIN), pulseISR, FALLING); // Adjust based on your requirements
 
     both.println("Configuring for TX");
     delay(200);
@@ -56,22 +55,23 @@ void loop()
     heltec_loop();
 
 #ifdef TX_DEVICE
-    unsigned long current_time = millis();
-    if (addCounterFlag)
-    {
-        gpioCounter++;
-        addCounterFlag = false;
-    }
+    unsigned long currentTime = millis();
+
+    unsigned long pulseCountSnapShot;
+
+    noInterrupts();
+    pulseCountSnapShot = pulseCounter;
+    interrupts();
 
     // Check if 5 seconds have passed since the last transmission
-    if (current_time - last_tx_time >= COUNTER_RESET_INTERVAL)
+    if (currentTime - lastTxTime >= COUNTER_RESET_INTERVAL)
     {
         // Transmit the counter value
-        both.printf("TX [%d] Counter: [%d] \n", counter, gpioCounter);
+        both.printf("TX [%d] Counter: [%d] \n", counter, pulseCounter);
         radio.clearDio1Action();
         heltec_led(50); // Turn on the LED to indicate transmission
         tx_time = millis();
-        RADIOLIB(radio.transmit(String(gpioCounter).c_str())); // Transmit the pulse counter
+        RADIOLIB(radio.transmit(String(pulseCounter).c_str())); // Transmit the pulse counter
         tx_time = millis() - tx_time;
         heltec_led(0);
 
@@ -80,9 +80,9 @@ void loop()
             both.printf("fail (%i)\n", _radiolib_status);
         }
 
-        gpioCounter = 0; // reset the counter
+        pulseCounter = 0; // reset the counter
 
-        last_tx_time = current_time;
+        lastTxTime = currentTime;
         counter++;
     }
 #endif
@@ -110,14 +110,13 @@ void rx()
     rxFlag = true;
 }
 
-void onGPIOInterrupt()
+void pulseISR()
 {
-    unsigned long interrupt_time = millis(); // Debounce: Only count if sufficient time has passed since the last interrupt
-    if (interrupt_time - last_interrupt_time > 100)
-    { // 50 ms debounce time
-        addCounterFlag = true;
-        last_interrupt_time = interrupt_time;
-        // gpioCounter++;
-        // both.println("+1");
+    unsigned long currentTime = millis(); // Get current time in microseconds
+    // Debouncing: Ignore pulses that occur within the debounce delay
+    if (currentTime - lastInterruptTime >= DEBOUNCE_DELAY)
+    {
+        pulseCounter++;                  // Increment the pulse counter
+        lastInterruptTime = currentTime; // Update the last pulse time
     }
 }

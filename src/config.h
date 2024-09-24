@@ -1,6 +1,6 @@
 // Define whether the module should be TX or RX
-#define TX_DEVICE // Uncomment this line for transmission mode
-// #define RX_DEVICE // Uncomment this line for reception mode
+// #define TX_DEVICE // Uncomment this line for transmission mode
+#define RX_DEVICE // Uncomment this line for reception mode
 
 // Turns the 'PRG' button into the power button, long press is off
 #define HELTEC_POWER_BUTTON // must be before "#include <heltec_unofficial.h>"
@@ -12,9 +12,7 @@
 #define PAUSE 1000
 
 // Frequency in MHz. Keep the decimal point to designate float.
-// Check your own rules and regulations to see what is legal where you are.
-// #define FREQUENCY           866.3       // for Europe
-#define FREQUENCY 905.2 // for US
+#define FREQUENCY 510.0 // for Brazil
 
 // LoRa bandwidth. Keep the decimal point to designate float.
 // Allowed values are 7.8, 10.4, 15.6, 20.8, 31.25, 41.7, 62.5, 125.0, 250.0 and 500.0 kHz.
@@ -31,4 +29,5 @@
 #define TRANSMIT_POWER 0
 
 #define GPIO_INPUT_PIN 7            // Input pin to sensor reading
-#define COUNTER_RESET_INTERVAL 2000 // Transmit information
+#define COUNTER_RESET_INTERVAL 3000 // Transmit information
+#define DEBOUNCE_DELAY 200
