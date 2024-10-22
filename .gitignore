@@ -1,3 +1,4 @@
 .pio
 .vscode
 /serialReader
+/source/MqttConfig.h
