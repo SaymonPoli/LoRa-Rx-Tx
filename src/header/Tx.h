@@ -4,129 +4,107 @@
 class TxRadio : public Radio
 {
 private:
-    unsigned long pulseCountSnapShot, currentTime;
-
-    volatile unsigned long pulseCounter = 0; // Sensor counter
-    unsigned long lastInterruptTime = 0;     // Last time the GPIO pin was activated
-    unsigned long lastTxTime = 0;            // Last time data was sent via LoRa
+    unsigned long pulseCountSnapShot{0}, currentTime{0};
+    static volatile unsigned long pulseCounter;      // Sensor counter
+    static volatile unsigned long lastInterruptTime; // Last time the GPIO pin was activated
+    static volatile bool pulseFlag;                  // Flag for pulse detection
 
     long counter = 0;
-    uint64_t last_tx = 0;
-    uint64_t tx_time;
-    uint64_t minimum_pause;
+    uint64_t lastTxTime{0};
+    bool transmitFlag = false;
 
-    void pulseISR();
+    static void pulseISR();
 
 public:
-    TxRadio(/* args */);
+    TxRadio();
     virtual void setupRadio();
     virtual void handleRadio();
-
     ~TxRadio();
 };
 
-TxRadio::TxRadio(/* args */)
-{
-}
+volatile unsigned long TxRadio::pulseCounter = 0;      // Initialize static variable
+volatile unsigned long TxRadio::lastInterruptTime = 0; // Initialize static variable
+volatile bool TxRadio::pulseFlag = false;              // Initialize static variable
+
+TxRadio::TxRadio() {}
 
 void TxRadio::setupRadio()
 {
-
     pinMode(BUILTIN_LED, OUTPUT);
     int state = radioLoRa.begin();
     if (state == RADIOLIB_ERR_NONE)
     {
-        log_d("\t\tRadio Setup Tx: SUCESS!");
+        log_d("\t\tRadio Setup Tx: SUCCESS!");
     }
     else
     {
-        log_d("\t\tInitialization failed, code %d", state);
+        log_e("\t\tInitialization failed, code %d", state);
         while (true)
             ;
     }
 
     log_d("[SX1262] Sending first packet ...");
-    transmitionState = radioLoRa.startTransmit("Hello World!");
-    if (state == RADIOLIB_ERR_NONE)
+    int transmissionState = radioLoRa.startTransmit("Hello World!");
+    if (transmissionState == RADIOLIB_ERR_NONE)
     {
-        log_d("\t\tReception success!");
+        log_d("\t\tTransmission success!");
     }
     else
     {
-        log_d("\t\tReception failed, code %d", state);
+        log_e("\t\tTransmission failed, code %d", transmissionState);
         while (true)
             ;
     }
-}
-
-TxRadio::~TxRadio()
-{
-}
-
-void pulseISR();
-
-// save transmission states between loops
-int transmissionState = RADIOLIB_ERR_NONE;
-void intializeTxDevice(SX1262 &radio)
-{
-    // Configure for transmission
-    transmissionState = radio.startTransmit("Hello, World!");
-    log_d("\t\t [SX1262] Starting to recieve");
 
     // Attach interrupt to GPIO pin
-    pinMode(GPIO_INPUT_PIN, INPUT_PULLUP);                                     // Pull-up resistor
-    attachInterrupt(digitalPinToInterrupt(GPIO_INPUT_PIN), pulseISR, FALLING); // Adjust based on your requirements
-
-    delay(200);
+    pinMode(GPIO_SENSOR_PIN, INPUT_PULLUP); // Pull-up resistor
+    attachInterrupt(digitalPinToInterrupt(GPIO_SENSOR_PIN), pulseISR, FALLING);
 }
+
+TxRadio::~TxRadio() {}
 
 void TxRadio::pulseISR()
 {
-    unsigned long currentTime = millis(); // Get current time in microseconds
-    // Debouncing: Ignore pulses that occur within the debounce delay
-    if (currentTime - lastInterruptTime >= DEBOUNCE_DELAY)
-    {
-        pulseCounter++;                  // Increment the pulse counter
-        lastInterruptTime = currentTime; // Update the last pulse time
-    }
+    pulseFlag = true; // Set flag for the main loop to handle
 }
 
 void TxRadio::handleRadio()
 {
     unsigned long currentTime = millis();
-
-    unsigned long pulseCountSnapShot;
-
-    noInterrupts();
-    pulseCountSnapShot = pulseCounter;
-    interrupts();
-
-    // Check if 5 seconds have passed since the last transmission
-    if (transmitFlag)
+    if (pulseFlag)
     {
-        String str;
-        transmissionState = radioLoRa.startTransmit("Hello world!: %d", pulseCountSnapShot);
+        pulseFlag = false; // Reset the flag
+
+        // Protect shared variables from race conditions
+        noInterrupts();
+        if (currentTime - lastInterruptTime >= DEBOUNCE_DELAY)
+        {
+            pulseCounter++;                  // Increment the pulse counter
+            lastInterruptTime = currentTime; // Update the last pulse time
+        }
+        interrupts();
+    }
+
+    // Check for transmition interval and data
+    if (currentTime - lastTxTime >= COUNTER_RESET_INTERVAL && pulseCounter > 0)
+    {
+
+        String payload = String(pulseCounter); // Create a dynamic payload
+        int transmissionState = radioLoRa.startTransmit(payload.c_str());
 
         if (transmissionState == RADIOLIB_ERR_NONE)
         {
-            log_d("Transmition sucess: %d", pulseCountSnapShot);
-            digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+            log_d("Transmission success: %s", payload.c_str());
+            digitalWrite(BUILTIN_LED, !digitalRead(BUILTIN_LED)); // Toggle LED
         }
         else
         {
-            log_d("Transmition failed: %d", transmissionState);
+            log_e("Transmission failed: %d", transmissionState);
         }
 
-        transmitFlag = false;
-        pulseCounter = 0; // reset the counter
-
+        pulseCounter = 0; // Reset the counter
         lastTxTime = currentTime;
         counter++;
-    }
-
-    if (currentTime - lastTxTime >= COUNTER_RESET_INTERVAL)
-    {
-        transmitFlag = true;
     }
 }
 

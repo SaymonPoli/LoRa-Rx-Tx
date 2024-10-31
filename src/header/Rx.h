@@ -10,42 +10,46 @@ class RxRadio : public Radio
 {
 private:
     static volatile bool transmitFlag;
-    static volatile bool recievedFlag;
-    // WifiClient *espClient = nullptr;
+    static volatile bool receivedFlag;
+    WiFiClient *espClient = nullptr;
     PubSubClient *client = nullptr;
 
+    void mqttPublish(String &);
+    void mqttPublish(String);
+    void messageCallback(char *topic, byte *payload, unsigned int length);
+
 public:
-    RxRadio(/* args */);
+    RxRadio();
+    ~RxRadio();
 
     static void setFlag(void);
     void setupRadio(void);
     void handleRadio(void);
     void reconnect();
     void setupWifi();
-    ~RxRadio();
 };
 
-volatile bool RxRadio::recievedFlag = false;
+volatile bool RxRadio::receivedFlag = false;
 
 RxRadio::RxRadio(/* args */)
 {
+    this->espClient = new WiFiClient;
+    client = new PubSubClient(*espClient);
 }
 
 RxRadio::~RxRadio()
 {
+    delete this->espClient;
+    delete this->client;
 }
-
-WiFiClient espClient;
-PubSubClient client(espClient);
 
 void RxRadio::setupRadio()
 {
-    // Configure for reception
-
+    // Configure radio for reception
     int state = radioLoRa.begin();
     if (state == RADIOLIB_ERR_NONE)
     {
-        log_d("\t\tRadio Setup Rx: SUCESS!");
+        log_d("\t\tRadio Setup Rx: SUCCESS!");
     }
     else
     {
@@ -54,23 +58,25 @@ void RxRadio::setupRadio()
             ;
     }
 
+    // Set callback for packet reception
     radioLoRa.setPacketReceivedAction(RxRadio::setFlag);
     radioLoRa.startReceive();
+
+    // Setup WiFi and connect to MQTT broker
     setupWifi();
-    // client.setServer(brokerServer, mqttPort);
+    this->client->setServer(brokerServer, mqttPort);
+    client->connect(clientId);
 }
 
 void RxRadio::setupWifi()
 {
-    delay(1000);
-
     log_d("\t\tConnecting to: %s", ssid);
 
     WiFi.begin(ssid, password);
 
     while (WiFi.status() != WL_CONNECTED)
     {
-        Serial.print(".");
+        log_d(".");
         delay(2000);
     }
     log_d("\t\tConnected");
@@ -78,45 +84,44 @@ void RxRadio::setupWifi()
 
 void RxRadio::reconnect()
 {
-    //     while (!client.connected())
-    //     {
-    //         Serial.print("\nConnecting to MQTT: ");
-    //         Serial.println(brokerServer);
+    while (!client->connected())
+    {
+        log_d("\nConnecting to MQTT: ");
+        log_d("%s", brokerServer);
 
-    //         if (client.connect(clientId))
-    //         {
-    //             Serial.println("Connected to broker");
-    //             // client.publish(topic, "Hello from ESP32!"); // Publish a message
-    //         }
-    //         else
-    //         {
-    //             Serial.print("Failed to connect, rc=");
-    //             Serial.print(client.state());
-    //             Serial.println(" try again in 5 seconds");
-    //             delay(5000);
-    //         }
-    //     }
+        if (client->connect(clientId))
+        {
+            log_d("Connected to broker");
+            client->publish(topic, "Hello from ESP32!"); // Publish a message
+        }
+        else
+        {
+            log_d("Failed to connect, rc =, %i \n trying again in 5 seconds", client->state());
+            delay(5000);
+        }
+    }
 }
 
 void RxRadio::handleRadio()
 {
 
-    //     if (!client.connected())
-    //     {
-    //         reconnect();
-    //     }
-    //     client.loop(); // Maintain connection and handle callbacks
-
-    if (recievedFlag)
+    if (this->client != nullptr && this->client->connected())
     {
-        String str;
-        int state = this->radioLoRa.readData(str);
-        recievedFlag = false;
+        reconnect();
+    }
+    client->loop(); // Maintain connection and handle callbacks
+
+    if (receivedFlag)
+    {
+        String message;
+        int state = this->radioLoRa.readData(message);
+        receivedFlag = false;
         log_d("Recieved new message.");
 
         if (state == RADIOLIB_ERR_NONE)
         {
-            log_d("Recieved message: %s ", str.c_str());
+            // log_d("Recieved message: %s ", str.c_str());
+            mqttPublish(message.c_str());
         }
         else if (state == RADIOLIB_ERR_CRC_MISMATCH)
         {
@@ -129,11 +134,35 @@ void RxRadio::handleRadio()
     }
 }
 
+void RxRadio::mqttPublish(String message)
+{
+    if (this->client != nullptr)
+    {
+        client->publish(topic, "%s", message.c_str());
+        log_d("Published message: %s", message.c_str());
+    }
+    else
+    {
+        log_d("Client not initialzed");
+    }
+}
+
+// Callback function to handle received MQTT messages
+// void RxRadio::messageCallback(char *topic, byte *payload, unsigned int length)
+// {
+//     // Convert payload to string
+//     String message = "";
+//     for (unsigned int i = 0; i < length; i++)
+//     {
+//         message += (char)payload[i];
+//     }
+//     log_d("Received message on topic %s: %s", topic, message.c_str());
+// }
+
 // Can't do Serial or display things here, takes too much time for the interrupt
 void RxRadio::setFlag(void)
 {
-    log_d("recieveflag");
-    RxRadio::recievedFlag = true;
+    RxRadio::receivedFlag = true;
 }
 
 #endif

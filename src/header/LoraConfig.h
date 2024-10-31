@@ -26,7 +26,7 @@
 // transmissting without an antenna can damage your hardware.
 #define TRANSMIT_POWER 0
 
-#define GPIO_INPUT_PIN 7            // Input pin to sensor reading
+#define GPIO_SENSOR_PIN 7           // Input pin to sensor reading
 #define COUNTER_RESET_INTERVAL 5000 // Transmit information
 #define DEBOUNCE_DELAY 200
 
