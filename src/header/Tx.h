@@ -1,4 +1,5 @@
 #ifdef TX_DEVICE
+#include <time.h>
 #include <../src/header/Radio.h>
 
 class TxRadio : public Radio
@@ -14,6 +15,7 @@ private:
     bool transmitFlag = false;
 
     static void pulseISR();
+    void createNewLoraConnection(void);
 
 public:
     TxRadio();
@@ -89,12 +91,14 @@ void TxRadio::handleRadio()
     if (currentTime - lastTxTime >= COUNTER_RESET_INTERVAL && pulseCounter > 0)
     {
 
-        String payload = String(pulseCounter); // Create a dynamic payload
-        int transmissionState = radioLoRa.startTransmit(payload.c_str());
+        String messagePayload = String(pulseCounter); // Create a dynamic payload
+        messagePayload += "adress";
+
+        int transmissionState = radioLoRa.startTransmit(messagePayload.c_str());
 
         if (transmissionState == RADIOLIB_ERR_NONE)
         {
-            log_d("Transmission success: %s", payload.c_str());
+            log_d("Transmission success: %s", messagePayload.c_str());
             digitalWrite(BUILTIN_LED, !digitalRead(BUILTIN_LED)); // Toggle LED
         }
         else

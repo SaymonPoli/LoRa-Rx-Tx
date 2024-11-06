@@ -17,6 +17,8 @@
 // LORA MISO pin: 11
 // LORA SCK pin:   9
 
+// GPIO 45 -> 48 defines sync word
+
 #define LORA_NSS 8
 #define LORA_DIO1 14
 #define LORA_NRST 12

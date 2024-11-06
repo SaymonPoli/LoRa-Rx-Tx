@@ -92,7 +92,7 @@ void RxRadio::reconnect()
         if (client->connect(clientId))
         {
             log_d("Connected to broker");
-            client->publish(topic, "Hello from ESP32!"); // Publish a message
+            client->publish(topic, "Hello from ESP32!");
         }
         else
         {
@@ -138,26 +138,19 @@ void RxRadio::mqttPublish(String message)
 {
     if (this->client != nullptr)
     {
-        client->publish(topic, "%s", message.c_str());
-        log_d("Published message: %s", message.c_str());
+        String timestamp = String(millis());
+        String status = "StatusOK";
+
+        String finalMessage = status + ':' + message;
+
+        client->publish(topic, finalMessage.c_str());
+        log_d("Published message: %s", finalMessage.c_str());
     }
     else
     {
         log_d("Client not initialzed");
     }
 }
-
-// Callback function to handle received MQTT messages
-// void RxRadio::messageCallback(char *topic, byte *payload, unsigned int length)
-// {
-//     // Convert payload to string
-//     String message = "";
-//     for (unsigned int i = 0; i < length; i++)
-//     {
-//         message += (char)payload[i];
-//     }
-//     log_d("Received message on topic %s: %s", topic, message.c_str());
-// }
 
 // Can't do Serial or display things here, takes too much time for the interrupt
 void RxRadio::setFlag(void)
