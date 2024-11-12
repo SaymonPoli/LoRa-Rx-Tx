@@ -141,7 +141,7 @@ void RxRadio::mqttPublish(String message)
         String timestamp = String(millis());
         String status = "StatusOK";
 
-        String finalMessage = status + ':' + message;
+        String finalMessage = status + '::' + message;
 
         client->publish(topic, finalMessage.c_str());
         log_d("Published message: %s", finalMessage.c_str());
