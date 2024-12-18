@@ -29,5 +29,6 @@
 #define GPIO_SENSOR_PIN 7           // Input pin to sensor reading
 #define COUNTER_RESET_INTERVAL 5000 // Transmit information
 #define DEBOUNCE_DELAY 200
+#define TIMESTAMP_PACKAGE 1000
 
 #endif

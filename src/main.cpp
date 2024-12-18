@@ -1,15 +1,3 @@
-/*
-   RadioLib SX126x Ping-Pong Example
-
-   For default module settings, see the wiki page
-   https://github.com/jgromes/RadioLib/wiki/Default-configuration#sx126x---lora-modem
-
-   For full API reference, see the GitHub Pages
-   https://jgromes.github.io/RadioLib/
-
-   Modified by: @amontero at Telegram
-                ajmcalvo at GitHub
-*/
 #include <Arduino.h>
 ICACHE_RAM_ATTR
 #include "../src/header/Tx.h"
@@ -23,11 +11,10 @@ TxRadio *radio = new TxRadio;
 RxRadio *radio = new RxRadio;
 #endif
 
-// bool recievedFlag = false;
-// void recieveFlag(void);
-
 void setup()
 {
+    pinMode(LED_BUILTIN, OUTPUT);
+
     Serial.begin(115200);
     radio->setupRadio();
 }

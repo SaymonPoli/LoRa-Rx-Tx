@@ -17,12 +17,13 @@
 // LORA MISO pin: 11
 // LORA SCK pin:   9
 
-// GPIO 45 -> 48 defines sync word
-
 #define LORA_NSS 8
 #define LORA_DIO1 14
 #define LORA_NRST 12
 #define LORA_BUSY 13
+
+// GPIO 45 -> 48 defines sync word
+const int radioSyncWordPins[4] = {2, 3, 4, 5};
 
 class Radio
 {
@@ -30,28 +31,18 @@ protected:
     int transmitionState;
     bool transmitFlag;
     SX1262 radioLoRa = new Module(LORA_NSS, LORA_DIO1, LORA_NRST, LORA_BUSY);
+    byte syncWord{0x00};
 
     void setFlag(void);
+    void setSyncWord(void);
+    void ErrorReport(const int &, const String &);
     virtual void setupRadio() = 0;
     virtual void handleRadio() = 0;
+    const char *toBinary(byte);
 
 public:
     Radio();
     ~Radio();
 };
-
-Radio::Radio()
-{
-
-    radioLoRa.setFrequency(865.0F);
-    radioLoRa.setSpreadingFactor(7U);
-    radioLoRa.setCodingRate(5U);
-    radioLoRa.setOutputPower(1);
-    transmitionState = RADIOLIB_ERR_NONE;
-}
-
-Radio::~Radio()
-{
-}
 
 #endif

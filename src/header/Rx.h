@@ -47,6 +47,8 @@ void RxRadio::setupRadio()
 {
     // Configure radio for reception
     int state = radioLoRa.begin();
+    this->setSyncWord();
+
     if (state == RADIOLIB_ERR_NONE)
     {
         log_d("\t\tRadio Setup Rx: SUCCESS!");
@@ -113,6 +115,7 @@ void RxRadio::handleRadio()
 
     if (receivedFlag)
     {
+        digitalWrite(LED_BUILTIN, true);
         String message;
         int state = this->radioLoRa.readData(message);
         receivedFlag = false;
@@ -141,10 +144,11 @@ void RxRadio::mqttPublish(String message)
         String timestamp = String(millis());
         String status = "StatusOK";
 
-        String finalMessage = status + '::' + message;
+        String finalMessage = status + "::" + message;
 
         client->publish(topic, finalMessage.c_str());
         log_d("Published message: %s", finalMessage.c_str());
+        digitalWrite(LED_BUILTIN, false);
     }
     else
     {

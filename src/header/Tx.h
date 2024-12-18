@@ -14,7 +14,7 @@ private:
     unsigned long pulseCountSnapShot{0}, currentTime{0};
     static volatile bool pulseFlag;                  // Flag for pulse detection
     static unsigned long lastInterruptTime;          // Last time the GPIO pin was activated
-    static std::vector<unsigned long> pulseCounter;  // Sensor counter
+    static std::vector<std::pair<unsigned long, std::size_t>> pulseCounter; // Sensor counter
 
     long counter = 0;
     uint64_t lastTxTime{0};
@@ -32,7 +32,7 @@ public:
     ~TxRadio();
 };
 
-std::vector<unsigned long> TxRadio::pulseCounter;      // Initialize static variable
+std::vector<std::pair<unsigned long, std::size_t>> TxRadio::pulseCounter; // Initialize static variable
 unsigned long TxRadio::lastInterruptTime = 0;          // Initialize static variable
 volatile bool TxRadio::pulseFlag = false;              // Initialize static variable
 
@@ -40,32 +40,15 @@ TxRadio::TxRadio() {}
 
 void TxRadio::setupRadio()
 {
-    pinMode(BUILTIN_LED, OUTPUT);
     int state = radioLoRa.begin();
-    if (state == RADIOLIB_ERR_NONE)
-    {
-        log_d("\t\tRadio Setup Tx: SUCCESS!");
-    }
-    else
-    {
-        log_e("\t\tInitialization failed, code %d", state);
-        while (true)
-            ;
-    }
+
+    this->setSyncWord(); // Setup sync word for LoRa
+
+    this->ErrorReport(state, "radio setup");
 
     log_d("[SX1262] Sending first packet ...");
     int transmissionState = radioLoRa.startTransmit("TimeSync::" + String(millis()) + "::" + String(getEspAdress()));
-    if (transmissionState == RADIOLIB_ERR_NONE)
-    {
-        log_d("\t\tTransmission success!");
-    }
-    else
-    {
-        log_e("\t\tTransmission failed, code %d", transmissionState);
-        while (true)
-            ;
-    }
-
+    this->ErrorReport(transmissionState, "First Transmission");
     // Attach interrupt to GPIO pin
     pinMode(GPIO_SENSOR_PIN, INPUT_PULLUP); // Pull-up resistor
     attachInterrupt(digitalPinToInterrupt(GPIO_SENSOR_PIN), pulseISR, FALLING);
@@ -89,8 +72,15 @@ void TxRadio::handleRadio()
         noInterrupts();
         if (currentTime - lastInterruptTime >= DEBOUNCE_DELAY)
         {
-            pulseCounter.push_back(currentTime); // Increment the pulse counter
-            lastInterruptTime = currentTime; // Update the last pulse time
+            if (currentTime - lastInterruptTime >= TIMESTAMP_PACKAGE) // Assemble packages in TIMESTAMP_PACKAGE
+            {
+                pulseCounter.push_back(std::make_pair(currentTime, 1)); // Increment the pulse counter
+                lastInterruptTime = currentTime;                        // Update the last pulse time
+            }
+            else
+            {
+                pulseCounter.back().second++;
+            }
         }
         interrupts();
     }
@@ -124,28 +114,30 @@ void TxRadio::sendPackage(void)
     this->lastTxTime = millis();
     this->counter++;
 }
+
 String TxRadio::assembleMessagePayload(void)
 {
     String dataString{""};
 
-    for (unsigned long &element : this->pulseCounter)
+    for (std::pair<unsigned long, std::size_t> &element : this->pulseCounter)
     {
         log_d("Element from pulseCounter: %d", element);
-        dataString += String(element) + "/";
+        dataString += String(element.first) + "/" + String(element.second);
     }
 
     String payload = "Data:" + dataString + "::" + "ID:" + String(getEspAdress()) + "::" + "Time:" + String(millis());
-    log_d("Assembled payload: %s", payload.c_str()); // Check the payload
+    log_d("Assembled payload: %s", payload.c_str());
 
     return payload;
 }
+
 uint64_t TxRadio::getEspAdress(void)
 {
     uint32_t low = ESP.getEfuseMac() & 0xFFFFFFFF;
     uint32_t high = (ESP.getEfuseMac() >> 32) % 0xFFFFFFFF;
 
     log_d("\tESP32 LOW esfuse mac: %d", low);
-    log_d("\tESP32 HIGH efuse mac: %d\n", high);
+    log_d("\tESP32 HIGH efuse mac: %d", high);
 
     return word(low, high);
 }
