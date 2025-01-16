@@ -2,10 +2,10 @@
 
 Radio::Radio()
 {
-    radioLoRa.setFrequency(865.0F);
-    radioLoRa.setSpreadingFactor(7U);
-    radioLoRa.setCodingRate(5U);
-    radioLoRa.setOutputPower(1);
+    this->radioLoRa.setFrequency(865.0F);
+    this->radioLoRa.setSpreadingFactor(7U);
+    this->radioLoRa.setCodingRate(5U);
+    this->radioLoRa.setOutputPower(1);
     transmitionState = RADIOLIB_ERR_NONE;
 }
 
@@ -23,7 +23,12 @@ void Radio::ErrorReport(const int &state, const String &action)
     }
 }
 
-void Radio::setSyncWord(void)
+int Radio::setRadioConfig(void)
+{
+    return this->radioLoRa.begin(FREQUENCY, BANDWIDTH, SPREADING_FACTOR, CODING_RATE, this->setSyncWord(), TRANSMIT_POWER);
+}
+
+uint8_t Radio::setSyncWord(void)
 {
     // setting radio sync word based on logic state of pins 2, 3, 4 and 5
     for (size_t i = 0;

@@ -8,10 +8,7 @@ TxRadio::TxRadio() {}
 
 void TxRadio::setupRadio()
 {
-    int state = radioLoRa.begin();
-
-    this->setSyncWord(); // Setup sync word for LoRa
-
+    int state = this->setRadioConfig();
     this->ErrorReport(state, "radio setup");
 
     log_d("[SX1262] Sending first packet ...");
@@ -19,7 +16,7 @@ void TxRadio::setupRadio()
     this->ErrorReport(transmissionState, "First Transmission");
     // Attach interrupt to GPIO pin
     pinMode(GPIO_SENSOR_PIN, INPUT_PULLUP); // Pull-up resistor
-    attachInterrupt(digitalPinToInterrupt(GPIO_SENSOR_PIN), pulseISR, FALLING);
+    attachInterrupt(digitalPinToInterrupt(GPIO_SENSOR_PIN), pulseISR, RISING);
 }
 
 TxRadio::~TxRadio() {}
@@ -67,7 +64,7 @@ void TxRadio::sendPackage(void)
     if (transmissionState == RADIOLIB_ERR_NONE)
     {
         log_d("Transmission success");
-        digitalWrite(BUILTIN_LED, !digitalRead(BUILTIN_LED));
+        // digitalWrite(BUILTIN_LED, !digitalRead(BUILTIN_LED));
     }
     else if (transmissionState == RADIOLIB_ERR_PACKET_TOO_LONG)
     {

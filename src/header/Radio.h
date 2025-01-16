@@ -34,8 +34,9 @@ protected:
     byte syncWord{0x00};
 
     void setFlag(void);
-    void setSyncWord(void);
     void ErrorReport(const int &, const String &);
+    int setRadioConfig(void);
+    uint8_t setSyncWord(void);
     virtual void setupRadio() = 0;
     virtual void handleRadio() = 0;
     const char *toBinary(byte);

@@ -46,7 +46,7 @@ RxRadio::~RxRadio()
 void RxRadio::setupRadio()
 {
     // Configure radio for reception
-    int state = radioLoRa.begin();
+    int state = this->setRadioConfig();
     this->setSyncWord();
 
     if (state == RADIOLIB_ERR_NONE)
@@ -67,7 +67,7 @@ void RxRadio::setupRadio()
     // Setup WiFi and connect to MQTT broker
     setupWifi();
     this->client->setServer(brokerServer, mqttPort);
-    client->connect(clientId);
+    client->connect("teste");
 }
 
 void RxRadio::setupWifi()
