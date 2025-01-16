@@ -37,6 +37,7 @@ protected:
     void ErrorReport(const int &, const String &);
     int setRadioConfig(void);
     uint8_t setSyncWord(void);
+    uint64_t getEspAdress(void);
     virtual void setupRadio() = 0;
     virtual void handleRadio() = 0;
     const char *toBinary(byte);

@@ -26,7 +26,6 @@ private:
 
 public:
     TxRadio();
-    uint64_t getEspAdress();
     virtual void setupRadio();
     virtual void handleRadio();
     ~TxRadio();

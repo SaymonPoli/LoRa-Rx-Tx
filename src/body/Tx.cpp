@@ -1,3 +1,4 @@
+#ifdef TX_DEVICE
 #include "../src/header/Tx.h"
 
 std::vector<std::pair<unsigned long, std::size_t>> TxRadio::pulseCounter; // Initialize static variable
@@ -93,14 +94,4 @@ String TxRadio::assembleMessagePayload(void)
 
     return payload;
 }
-
-uint64_t TxRadio::getEspAdress(void)
-{
-    uint32_t low = ESP.getEfuseMac() & 0xFFFFFFFF;
-    uint32_t high = (ESP.getEfuseMac() >> 32) % 0xFFFFFFFF;
-
-    // log_d("\tESP32 LOW esfuse mac: %d", low);
-    // log_d("\tESP32 HIGH efuse mac: %d", high);
-
-    return word(low, high);
-}
+#endif

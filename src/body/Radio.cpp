@@ -58,6 +58,17 @@ const char *Radio::toBinary(byte b)
     return binaryString;
 }
 
+uint64_t Radio::getEspAdress(void)
+{
+    uint32_t low = ESP.getEfuseMac() & 0xFFFFFFFF;
+    uint32_t high = (ESP.getEfuseMac() >> 32) % 0xFFFFFFFF;
+
+    // log_d("\tESP32 LOW esfuse mac: %d", low);
+    // log_d("\tESP32 HIGH efuse mac: %d", high);
+
+    return word(low, high);
+}
+
 Radio::~Radio()
 {
 }
