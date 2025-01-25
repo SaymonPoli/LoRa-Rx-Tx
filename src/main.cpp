@@ -13,6 +13,7 @@ RxRadio *radio = new RxRadio;
 
 void setup()
 {
+    setCpuFrequencyMhz(40);
     pinMode(LED_BUILTIN, OUTPUT);
 
     Serial.begin(115200);
@@ -22,32 +23,4 @@ void setup()
 void loop()
 {
     radio->handleRadio();
-
-    // #ifdef RX_DEVICE
-    //     if (recievedFlag)
-    //     {
-    //         String str;
-    //         int state = this->radioLoRa.readData(str);
-
-    //         log_d("Recieved new message.");
-
-    //         if (state == RADIOLIB_ERR_NONE)
-    //         {
-    //             log_d("Recieved message: %s", str);
-    //         }
-    //         else if (state == RADIOLIB_ERR_CRC_MISMATCH)
-    //         {
-    //             log_d("crc error!");
-    //         }
-    //         else
-    //         {
-    //             log_d("failed, code: %d", state);
-    //         }
-    //     }
-    // #endif
 }
-
-// void recieveFlag()
-// {
-//     recievedFlag = true;
-// }

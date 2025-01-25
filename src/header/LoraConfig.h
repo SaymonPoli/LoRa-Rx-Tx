@@ -1,9 +1,6 @@
 #ifndef LORA_CONFIG_H
 #define LORA_CONFIG_H
 
-// Turns the 'PRG' button into the power button, long press is off
-#define HELTEC_POWER_BUTTON // must be before "#include <heltec_unofficial.h>"
-
 // Pause between transmitted packets in seconds.
 // Set to zero to only transmit a packet when pressing the user button
 // Will not exceed 1% duty cycle, even if you set a lower value.
@@ -18,7 +15,7 @@
 
 // Number from 5 to 12. Higher means slower but higher "processor gain",
 // meaning (in nutshell) longer range and more robust against interference.
-#define SPREADING_FACTOR 6
+#define SPREADING_FACTOR 7
 
 #define CODING_RATE 5
 
