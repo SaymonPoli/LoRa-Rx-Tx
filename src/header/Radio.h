@@ -34,9 +34,9 @@ protected:
     byte syncWord{0x00};
 
     void setFlag(void);
-    void ErrorReport(const int &, const String &);
+    void StatusReport(const int &, const String &);
     int setRadioConfig(void);
-    uint8_t setSyncWord(void);
+    uint8_t getSyncWord(void);
     uint64_t getEspAdress(void);
     virtual void setupRadio() = 0;
     virtual void handleRadio() = 0;

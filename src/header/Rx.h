@@ -1,15 +1,14 @@
 #ifdef RX_DEVICE
 // #define RX_DEVICE
 
-#include "../src/header/Radio.h"
-#include "../src/header/MqttConfig.h"
+#include <header/Radio.h>
+#include <header/MqttConfig.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
 
 class RxRadio : public Radio
 {
 private:
-    static volatile bool transmitFlag;
     static volatile bool receivedFlag;
     WiFiClient *espClient = nullptr;
     PubSubClient *client = nullptr;
@@ -47,7 +46,6 @@ void RxRadio::setupRadio()
 {
     // Configure radio for reception
     int state = this->setRadioConfig();
-    this->setSyncWord();
 
     if (state == RADIOLIB_ERR_NONE)
     {
@@ -66,8 +64,9 @@ void RxRadio::setupRadio()
 
     // Setup WiFi and connect to MQTT broker
     setupWifi();
-    this->client->setServer(brokerServer, mqttPort);
-    client->connect("teste");
+    // this->client->setServer(brokerServer, mqttPort);
+    // client->connect("teste");
+    log_d("finished setup");
 }
 
 void RxRadio::setupWifi()
@@ -111,6 +110,7 @@ void RxRadio::handleRadio()
     {
         reconnect();
     }
+
     client->loop(); // Maintain connection and handle callbacks
 
     if (receivedFlag)
@@ -159,6 +159,7 @@ void RxRadio::mqttPublish(String message)
 // Can't do Serial or display things here, takes too much time for the interrupt
 void RxRadio::setFlag(void)
 {
+    // log_d("crasha");
     RxRadio::receivedFlag = true;
 }
 

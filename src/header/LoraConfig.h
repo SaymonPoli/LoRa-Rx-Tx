@@ -10,7 +10,7 @@
 
 // Frequency in MHz. Keep the decimal point to designate float.
 #ifndef FREQUENCY
-#define FREQUENCY 433.0 // for Brazil change to 915.0
+#define FREQUENCY 433.0F // for Brazil change to 915.0
 #endif
 
 // LoRa bandwidth. Keep the decimal point to designate float.

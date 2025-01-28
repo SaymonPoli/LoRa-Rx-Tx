@@ -23,6 +23,7 @@ private:
     static void pulseISR();
     void sendPackage();
     String assembleMessagePayload(void);
+    void deBounce(void);
 
 public:
     TxRadio();

@@ -2,14 +2,22 @@
 
 Radio::Radio()
 {
-    this->radioLoRa.setFrequency(865.0F);
-    this->radioLoRa.setSpreadingFactor(7U);
-    this->radioLoRa.setCodingRate(5U);
-    this->radioLoRa.setOutputPower(1);
+    // setting radio sync word based on logic state of pins 2, 3, 4 and 5
+    for (size_t i = 0; i < 4; i++)
+    {
+        pinMode(radioSyncWordPins[i], INPUT_PULLUP);
+        this->syncWord |= (digitalRead(radioSyncWordPins[i]) << (3 - i));
+    }
+    log_d("Sync Word: 0x%02X (Binary: %s)", this->syncWord, toBinary(syncWord));
+
+    // this->radioLoRa.setFrequency(865.0F);
+    // this->radioLoRa.setSpreadingFactor(7U);
+    // this->radioLoRa.setCodingRate(5U);
+    // this->radioLoRa.setOutputPower(1);
     transmitionState = RADIOLIB_ERR_NONE;
 }
 
-void Radio::ErrorReport(const int &state, const String &action)
+void Radio::StatusReport(const int &state, const String &action)
 {
     if (state != RADIOLIB_ERR_NONE)
     {
@@ -25,28 +33,75 @@ void Radio::ErrorReport(const int &state, const String &action)
 
 int Radio::setRadioConfig(void)
 {
-    return this->radioLoRa.begin(FREQUENCY, BANDWIDTH, SPREADING_FACTOR, CODING_RATE, this->setSyncWord(), TRANSMIT_POWER);
-}
 
-uint8_t Radio::setSyncWord(void)
-{
-    // setting radio sync word based on logic state of pins 2, 3, 4 and 5
-    for (size_t i = 0;
-         i < 4; i++)
+    // int result = this->radioLoRa.begin(FREQUENCY, BANDWIDTH, SPREADING_FACTOR, CODING_RATE, syncWord, TRANSMIT_POWER);
+    int result = this->radioLoRa.begin();
+    if (this->radioLoRa.setFrequency(FREQUENCY) == RADIOLIB_ERR_INVALID_FREQUENCY)
     {
-        pinMode(radioSyncWordPins[i], INPUT_PULLUP);
-        log_d("Setting sync word pin: %d", radioSyncWordPins[i]);
-        this->syncWord |= (digitalRead(radioSyncWordPins[i]) << (3 - i));
-    }
-    log_d("Sync Word: 0x%02X (Binary: %s)", syncWord, toBinary(syncWord));
-
-    if (radioLoRa.setSyncWord(syncWord) != RADIOLIB_ERR_NONE)
-    {
-        log_e("Unable to setSyncWord!");
+        log_e("Selected frequency is invalid for this module!");
         while (true)
+        {
             delay(10);
+        }
     }
+
+    // set bandwidth to 250 kHz
+    if (this->radioLoRa.setBandwidth(250.0) == RADIOLIB_ERR_INVALID_BANDWIDTH)
+    {
+        log_e("Selected bandwidth is invalid for this module!");
+        while (true)
+        {
+            delay(10);
+        }
+    }
+
+    // set spreading factor to 10
+    if (this->radioLoRa.setSpreadingFactor(10) == RADIOLIB_ERR_INVALID_SPREADING_FACTOR)
+    {
+        log_e("Selected spreading factor is invalid for this module!");
+        while (true)
+        {
+            delay(10);
+        }
+    }
+
+    // set coding rate to 6
+    if (this->radioLoRa.setCodingRate(7) == RADIOLIB_ERR_INVALID_CODING_RATE)
+    {
+        log_e("Selected coding rate is invalid for this module!");
+        while (true)
+        {
+            delay(10);
+        }
+    }
+
+    // set LoRa sync word to syncWord
+    if (this->radioLoRa.setSyncWord(0xAB) != RADIOLIB_ERR_NONE) // TODO: make the syncWord hardware
+    {
+        log_e("Unable to set sync word!");
+        while (true)
+        {
+            delay(10);
+        }
+    }
+
+    // set output power to 10 dBm (accepted range is -17 - 22 dBm)
+    if (this->radioLoRa.setOutputPower(2) == RADIOLIB_ERR_INVALID_OUTPUT_POWER)
+    {
+        log_e("Selected output power is invalid for this module!");
+        while (true)
+        {
+            delay(10);
+        }
+    }
+
+    StatusReport(result, "Radio Configuration");
+
+    return result;
 }
+
+uint8_t Radio::getSyncWord(void) { return this->syncWord; }
+
 const char *Radio::toBinary(byte b)
 {
     static char binaryString[9]; // 8 bits + null terminator
@@ -62,9 +117,6 @@ uint64_t Radio::getEspAdress(void)
 {
     uint32_t low = ESP.getEfuseMac() & 0xFFFFFFFF;
     uint32_t high = (ESP.getEfuseMac() >> 32) % 0xFFFFFFFF;
-
-    // log_d("\tESP32 LOW esfuse mac: %d", low);
-    // log_d("\tESP32 HIGH efuse mac: %d", high);
 
     return word(low, high);
 }

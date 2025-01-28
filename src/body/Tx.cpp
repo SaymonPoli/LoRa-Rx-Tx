@@ -10,11 +10,12 @@ TxRadio::TxRadio() {}
 void TxRadio::setupRadio()
 {
     int state = this->setRadioConfig();
-    this->ErrorReport(state, "radio setup");
+    // this->radioLoRa.setSyncWord(this->getSyncWord());
 
     log_d("[SX1262] Sending first packet ...");
     int transmissionState = radioLoRa.startTransmit("TimeSync::" + String(millis()) + "::" + String(getEspAdress()));
-    this->ErrorReport(transmissionState, "First Transmission");
+    this->StatusReport(transmissionState, "First Transmission");
+
     // Attach interrupt to GPIO pin
     pinMode(GPIO_SENSOR_PIN, INPUT_PULLUP); // Pull-up resistor
     attachInterrupt(digitalPinToInterrupt(GPIO_SENSOR_PIN), pulseISR, RISING);
@@ -65,7 +66,7 @@ void TxRadio::sendPackage(void)
     if (transmissionState == RADIOLIB_ERR_NONE)
     {
         log_d("Transmission success");
-        // digitalWrite(BUILTIN_LED, !digitalRead(BUILTIN_LED));
+        digitalWrite(BUILTIN_LED, !digitalRead(BUILTIN_LED));
     }
     else if (transmissionState == RADIOLIB_ERR_PACKET_TOO_LONG)
     {
@@ -94,4 +95,17 @@ String TxRadio::assembleMessagePayload(void)
 
     return payload;
 }
+
+void deBounce()
+{
+    unsigned long now = millis();
+    do
+    {
+        // on bounce, reset time-out
+        if (digitalRead(GPIO_SENSOR_PIN) == LOW)
+            now = millis();
+    } while (digitalRead(GPIO_SENSOR_PIN) == LOW ||
+             (millis() - now) <= DEBOUNCE_DELAY);
+}
+
 #endif
