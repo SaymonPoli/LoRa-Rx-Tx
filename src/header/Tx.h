@@ -23,6 +23,7 @@ private:
     static void pulseISR();
     void sendPackage();
     String assembleMessagePayload(void);
+    void deepSleepEnable(unsigned long &, unsigned long &);
     void deBounce(void);
 
 public:

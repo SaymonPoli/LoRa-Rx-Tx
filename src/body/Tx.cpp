@@ -1,6 +1,19 @@
 #ifdef TX_DEVICE
 #include "../src/header/Tx.h"
 
+/*
+  Configuration for deepsleep
+*/
+#define DEEPSLEEP_MINIMUM_TIME 10000 // 10 seconds
+
+#if CONFIG_IDF_TARGET_ESP32
+#define THRESHOLD 40   // Bigger the value more sensitivity
+#else                  // ESP32-S2 and ESP32-S3 or other defalt chips
+#define THRESHOLD 5000 // Lower the value more sensitivity
+#endif
+
+touch_pad_t touchPin = TOUCH_PAD_NUM7;
+
 std::vector<std::pair<unsigned long, std::size_t>> TxRadio::pulseCounter; // Initialize static variable
 unsigned long TxRadio::lastInterruptTime = 0;                             // Initialize static variable
 volatile bool TxRadio::pulseFlag = false;                                 // Initialize static variable
@@ -9,6 +22,8 @@ TxRadio::TxRadio() {}
 
 void TxRadio::setupRadio()
 {
+    touchSleepWakeUpEnable(T7, THRESHOLD);
+
     int state = this->setRadioConfig();
 
     log_d("[SX1262] Sending first packet ...");
@@ -30,10 +45,11 @@ void TxRadio::pulseISR()
 void TxRadio::handleRadio()
 {
     unsigned long currentTime = millis();
+    deepSleepEnable(currentTime, lastInterruptTime);
     if (pulseFlag)
     {
-        pulseFlag = false; // Reset the flag
         noInterrupts();
+        pulseFlag = false; // Reset the flag
 
         // Protect shared variables from race conditions
         if (currentTime - lastInterruptTime >= DEBOUNCE_DELAY)
@@ -63,6 +79,7 @@ void TxRadio::sendPackage(void)
 {
     int transmissionState = radioLoRa.startTransmit(assembleMessagePayload().c_str());
     StatusReport(transmissionState, "Send Package");
+    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
 
     this->pulseCounter.clear(); // Reset the count
     this->lastTxTime = millis();
@@ -83,7 +100,7 @@ String TxRadio::assembleMessagePayload(void)
     return payload;
 }
 
-void deBounce()
+void TxRadio::deBounce()
 {
     unsigned long now = millis();
     do
@@ -95,4 +112,12 @@ void deBounce()
              (millis() - now) <= DEBOUNCE_DELAY);
 }
 
+void TxRadio::deepSleepEnable(unsigned long &currentTime, unsigned long &lastInterruptTime)
+{
+    if (currentTime - lastInterruptTime > DEEPSLEEP_MINIMUM_TIME)
+    {
+        log_d("Enterring deepsleep");
+        esp_deep_sleep_start();
+    }
+}
 #endif
