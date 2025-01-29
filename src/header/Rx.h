@@ -159,7 +159,6 @@ void RxRadio::mqttPublish(String message)
 // Can't do Serial or display things here, takes too much time for the interrupt
 void RxRadio::setFlag(void)
 {
-    // log_d("crasha");
     RxRadio::receivedFlag = true;
 }
 

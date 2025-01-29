@@ -10,10 +10,6 @@ Radio::Radio()
     }
     log_d("Sync Word: 0x%02X (Binary: %s)", this->syncWord, toBinary(syncWord));
 
-    // this->radioLoRa.setFrequency(865.0F);
-    // this->radioLoRa.setSpreadingFactor(7U);
-    // this->radioLoRa.setCodingRate(5U);
-    // this->radioLoRa.setOutputPower(1);
     transmitionState = RADIOLIB_ERR_NONE;
 }
 
@@ -21,7 +17,7 @@ void Radio::StatusReport(const int &state, const String &action)
 {
     if (state != RADIOLIB_ERR_NONE)
     {
-        log_e("ERROR!, error code %d, actior: %s", state, action.c_str());
+        log_e("ERROR!, error code %d, action: %s", state, action.c_str());
         while (true)
             delay(100);
     }
@@ -34,7 +30,6 @@ void Radio::StatusReport(const int &state, const String &action)
 int Radio::setRadioConfig(void)
 {
 
-    // int result = this->radioLoRa.begin(FREQUENCY, BANDWIDTH, SPREADING_FACTOR, CODING_RATE, syncWord, TRANSMIT_POWER);
     int result = this->radioLoRa.begin();
     if (this->radioLoRa.setFrequency(FREQUENCY) == RADIOLIB_ERR_INVALID_FREQUENCY)
     {
