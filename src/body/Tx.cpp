@@ -10,7 +10,6 @@ TxRadio::TxRadio() {}
 void TxRadio::setupRadio()
 {
     int state = this->setRadioConfig();
-    // this->radioLoRa.setSyncWord(this->getSyncWord());
 
     log_d("[SX1262] Sending first packet ...");
     int transmissionState = radioLoRa.startTransmit("TimeSync::" + String(millis()) + "::" + String(getEspAdress()));
@@ -63,19 +62,8 @@ void TxRadio::handleRadio()
 void TxRadio::sendPackage(void)
 {
     int transmissionState = radioLoRa.startTransmit(assembleMessagePayload().c_str());
-    if (transmissionState == RADIOLIB_ERR_NONE)
-    {
-        log_d("Transmission success");
-        digitalWrite(BUILTIN_LED, !digitalRead(BUILTIN_LED));
-    }
-    else if (transmissionState == RADIOLIB_ERR_PACKET_TOO_LONG)
-    {
-        log_e("Packet, too long");
-    }
-    else
-    {
-        log_e("Transmission failed: %d", transmissionState);
-    }
+    StatusReport(transmissionState, "Send Package");
+
     this->pulseCounter.clear(); // Reset the count
     this->lastTxTime = millis();
 }
@@ -86,7 +74,6 @@ String TxRadio::assembleMessagePayload(void)
 
     for (std::pair<unsigned long, std::size_t> &element : this->pulseCounter)
     {
-        // log_d("Element from pulseCounter: %d", element);
         dataString += String(element.first) + "/" + String(element.second) + "//";
     }
 
