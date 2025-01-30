@@ -15,15 +15,20 @@ private:
     static volatile bool pulseFlag;                  // Flag for pulse detection
     static unsigned long lastInterruptTime;          // Last time the GPIO pin was activated
     static std::vector<std::pair<unsigned long, std::size_t>> pulseCounter; // Sensor counter
-
     long counter = 0;
     uint64_t lastTxTime{0};
     bool transmitFlag = false;
+    bool sleepFlag = false;
 
-    static void pulseISR();
-    void sendPackage();
+    /*
+        Radio methods
+    */
+    static void pulseISR(void);
+    void sendPackage(void);
     String assembleMessagePayload(void);
-    void deepSleepEnable(unsigned long &, unsigned long &);
+    void incrementPulseCounter(unsigned long &);
+
+    void deepSleepEnable(unsigned long &);
     void deBounce(void);
 
 public:

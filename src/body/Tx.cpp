@@ -2,7 +2,7 @@
 #include "../src/header/Tx.h"
 
 /*
-  Configuration for deepsleep
+    Configurations for deepsleep
 */
 #define DEEPSLEEP_MINIMUM_TIME 10000 // 10 seconds
 
@@ -14,12 +14,17 @@
 
 touch_pad_t touchPin = TOUCH_PAD_NUM7;
 
-std::vector<std::pair<unsigned long, std::size_t>> TxRadio::pulseCounter; // Initialize static variable
-unsigned long TxRadio::lastInterruptTime = 0;                             // Initialize static variable
-volatile bool TxRadio::pulseFlag = false;                                 // Initialize static variable
+/*
+    Initialize static variables
+*/
+std::vector<std::pair<unsigned long, std::size_t>> TxRadio::pulseCounter;
+volatile bool TxRadio::pulseFlag = false;
 
 TxRadio::TxRadio() {}
 
+/*
+    @brief Initialize the radio and set up the interrupt
+*/
 void TxRadio::setupRadio()
 {
     touchSleepWakeUpEnable(T7, THRESHOLD);
@@ -33,38 +38,24 @@ void TxRadio::setupRadio()
     // Attach interrupt to GPIO pin
     pinMode(GPIO_SENSOR_PIN, INPUT_PULLUP); // Pull-up resistor
     attachInterrupt(digitalPinToInterrupt(GPIO_SENSOR_PIN), pulseISR, RISING);
+
+    // If coming back from sleep add a pulse to the counter
+    if (sleepFlag)
+        pulseFlag = true;
 }
 
-TxRadio::~TxRadio() {}
-
-void TxRadio::pulseISR()
-{
-    pulseFlag = true; // Set flag for the main loop to handle
-}
-
+/*
+    @brief Handle radio functions as sending packages and incrementing pulse counter
+*/
 void TxRadio::handleRadio()
 {
     unsigned long currentTime = millis();
-    deepSleepEnable(currentTime, lastInterruptTime);
+    deepSleepEnable(currentTime);
     if (pulseFlag)
     {
         noInterrupts();
         pulseFlag = false; // Reset the flag
-
-        // Protect shared variables from race conditions
-        if (currentTime - lastInterruptTime >= DEBOUNCE_DELAY)
-        {
-            if (currentTime - lastInterruptTime >= TIMESTAMP_PACKAGE || pulseCounter.empty()) // Assemble packages in TIMESTAMP_PACKAGE
-            {
-                pulseCounter.push_back(std::make_pair(currentTime, 1)); // Increment the pulse counter
-                lastInterruptTime = currentTime;                        // Update the last pulse time
-            }
-            else
-            {
-                pulseCounter.back().second++;
-                log_d("\t pulseCount: %d", pulseCounter.back().second);
-            }
-        }
+        incrementPulseCounter(currentTime);
         interrupts();
     }
 
@@ -75,9 +66,33 @@ void TxRadio::handleRadio()
     }
 }
 
+/*
+    @brief Increments the pulse counter
+    @param currentTime Current time in milliseconds
+*/
+void TxRadio::incrementPulseCounter(unsigned long &currentTime)
+{
+    if (currentTime - this->lastInterruptTime >= DEBOUNCE_DELAY)
+    {
+        if (currentTime - this->lastInterruptTime >= TIMESTAMP_PACKAGE || pulseCounter.empty()) // Assemble packages in TIMESTAMP_PACKAGE
+        {
+            pulseCounter.push_back(std::make_pair(currentTime, 1)); // Increment the pulse counter
+            this->lastInterruptTime = currentTime;                  // Update the last pulse time
+        }
+        else
+        {
+            pulseCounter.back().second++;
+            log_d("\t pulseCount: %d", pulseCounter.back().second);
+        }
+    }
+}
+
+/*
+    @brief Sends the assembled package
+*/
 void TxRadio::sendPackage(void)
 {
-    int transmissionState = radioLoRa.startTransmit(assembleMessagePayload().c_str());
+    int transmissionState = this->radioLoRa.startTransmit(assembleMessagePayload().c_str());
     StatusReport(transmissionState, "Send Package");
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
 
@@ -85,6 +100,10 @@ void TxRadio::sendPackage(void)
     this->lastTxTime = millis();
 }
 
+/*
+    @brief Assembles the message payload
+    @returns payload as a string
+*/
 String TxRadio::assembleMessagePayload(void)
 {
     String dataString{""};
@@ -95,11 +114,14 @@ String TxRadio::assembleMessagePayload(void)
     }
 
     String payload = "Data:" + dataString + "::" + "ID:" + String(getEspAdress()) + "::" + "Time:" + String(millis());
-    log_d("Assembled payload: %s", payload.c_str());
+    log_d("Assembled payload:\n\t %s", payload.c_str());
 
     return payload;
 }
 
+/*
+    @brief Debounce for the pulse sensor
+*/
 void TxRadio::deBounce()
 {
     unsigned long now = millis();
@@ -112,12 +134,27 @@ void TxRadio::deBounce()
              (millis() - now) <= DEBOUNCE_DELAY);
 }
 
-void TxRadio::deepSleepEnable(unsigned long &currentTime, unsigned long &lastInterruptTime)
+/*
+    @brief Confirms the if enough time has passed to enter deepsleeps
+*/
+void TxRadio::deepSleepEnable(unsigned long &currentTime)
 {
-    if (currentTime - lastInterruptTime > DEEPSLEEP_MINIMUM_TIME)
+    if (currentTime - this->lastInterruptTime > DEEPSLEEP_MINIMUM_TIME)
     {
         log_d("Enterring deepsleep");
+        this->sleepFlag = true;
         esp_deep_sleep_start();
     }
 }
+
+/*
+    @brief Interrupt Service Routine for the pulse sensor
+*/
+void TxRadio::pulseISR()
+{
+    pulseFlag = true; // Set flag for the main loop to handle
+}
+
+TxRadio::~TxRadio() {}
+
 #endif
