@@ -18,6 +18,7 @@ touch_pad_t touchPin = TOUCH_PAD_NUM7;
     Initialize static variables
 */
 std::vector<std::pair<unsigned long, std::size_t>> TxRadio::pulseCounter;
+unsigned long TxRadio::lastInterruptTime = 0;
 volatile bool TxRadio::pulseFlag = false;
 
 TxRadio::TxRadio() {}
@@ -62,6 +63,7 @@ void TxRadio::handleRadio()
     // Check for transmition interval and data
     if (currentTime - lastTxTime >= COUNTER_RESET_INTERVAL && pulseCounter.size() > 0)
     {
+
         this->sendPackage();
     }
 }
