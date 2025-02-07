@@ -63,7 +63,6 @@ void TxRadio::handleRadio()
     // Check for transmition interval and data
     if (currentTime - lastTxTime >= COUNTER_RESET_INTERVAL && pulseCounter.size() > 0)
     {
-
         this->sendPackage();
     }
 }
