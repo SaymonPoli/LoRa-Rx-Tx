@@ -22,7 +22,7 @@
 // Number from 5 to 12. Higher means slower but higher "processor gain",
 // meaning (in nutshell) longer range and more robust against interference.
 #ifndef SPREADING_FACTOR
-#define SPREADING_FACTOR 7
+#define SPREADING_FACTOR 10
 #endif
 
 #ifndef CODDING_RATE
@@ -33,7 +33,7 @@
 // set anywhere between -9 dBm (0.125 mW) to 22 dBm (158 mW). Note that the maximum ERP
 // (which is what your antenna maximally radiates) on the EU ISM band is 25 mW, and that
 // transmissting without an antenna can damage your hardware.
-#define TRANSMIT_POWER 0
+#define TRANSMIT_POWER 4
 
 #define GPIO_SENSOR_PIN 7           // Input pin to sensor reading
 #define COUNTER_RESET_INTERVAL 5000 // Transmit information
