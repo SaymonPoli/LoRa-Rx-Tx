@@ -4,10 +4,6 @@
 #include <../src/header/LoraConfig.h>
 #include <RadioLib.h>
 
-// uncomment the following only on one
-// of the nodes to initiate the pings
-#define INITIATING_NODE
-
 // Defaults for heltec_wifi_lora_32_v3
 // NSS pin:        8
 // DIO1 pin:      14
