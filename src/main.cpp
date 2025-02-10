@@ -6,12 +6,9 @@ ICACHE_RAM_ATTR
 #endif
 
 /*
-  Import Tx if the device is Tx
+  Import if the device is Tx
 */
 #ifdef TX_DEVICE
-/*
-  Import Tx class and initialize the radio
-*/
 #include "../src/header/Tx.h"
 TxRadio *radio = new TxRadio;
 #endif
