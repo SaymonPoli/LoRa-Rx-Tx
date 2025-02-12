@@ -17,8 +17,6 @@ private:
     static std::vector<std::pair<unsigned long, std::size_t>> pulseCounter; // Sensor counter
     long counter = 0;
     uint64_t lastTxTime{0};
-    bool transmitFlag = false;
-    bool sleepFlag = false;
 
     /*
         Radio methods

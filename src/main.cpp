@@ -22,10 +22,15 @@ RxRadio *radio = new RxRadio;
 #endif
 
 void setup() {
+  Serial.begin(115200);
+  while (!Serial)
+  {
+    delay(100);
+  } // wait for serial to be available
+
   // setCpuFrequencyMhz(40);
   pinMode(LED_BUILTIN, OUTPUT);
 
-  Serial.begin(115200);
   radio->setupRadio();
 }
 

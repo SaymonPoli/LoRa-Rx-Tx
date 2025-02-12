@@ -20,6 +20,7 @@ touch_pad_t touchPin = TOUCH_PAD_NUM7;
 std::vector<std::pair<unsigned long, std::size_t>> TxRadio::pulseCounter;
 unsigned long TxRadio::lastInterruptTime = 0;
 volatile bool TxRadio::pulseFlag = false;
+bool sleepFlag = false;
 
 TxRadio::TxRadio() {}
 
@@ -41,8 +42,13 @@ void TxRadio::setupRadio()
     attachInterrupt(digitalPinToInterrupt(GPIO_SENSOR_PIN), pulseISR, RISING);
 
     // If coming back from sleep add a pulse to the counter
-    if (sleepFlag)
-        pulseFlag = true;
+
+    if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_TOUCHPAD)
+    {
+        log_d("returning from deepsleep");
+        unsigned long time = millis();
+        incrementPulseCounter(time);
+    }
 }
 
 /*
@@ -73,19 +79,22 @@ void TxRadio::handleRadio()
 */
 void TxRadio::incrementPulseCounter(unsigned long &currentTime)
 {
-    if (currentTime - this->lastInterruptTime >= DEBOUNCE_DELAY)
+    // if (currentTime - this->lastInterruptTime >= DEBOUNCE_DELAY)
+    // {
+    if (currentTime - this->lastInterruptTime >= TIMESTAMP_PACKAGE || pulseCounter.empty()) // Assemble packages in TIMESTAMP_PACKAGE
     {
-        if (currentTime - this->lastInterruptTime >= TIMESTAMP_PACKAGE || pulseCounter.empty()) // Assemble packages in TIMESTAMP_PACKAGE
-        {
-            pulseCounter.push_back(std::make_pair(currentTime, 1)); // Increment the pulse counter
-            this->lastInterruptTime = currentTime;                  // Update the last pulse time
-        }
+        pulseCounter.push_back(std::make_pair(currentTime, 1)); // Increment the pulse counter
+        this->lastInterruptTime = currentTime;                  // Update the last pulse time
+        log_d("Incrementing");
+    }
         else
         {
+            // TODO: arrumar o debounce
+            // deBounce();
             pulseCounter.back().second++;
             log_d("\t pulseCount: %d", pulseCounter.back().second);
         }
-    }
+        // }
 }
 
 /*
@@ -125,14 +134,20 @@ String TxRadio::assembleMessagePayload(void)
 */
 void TxRadio::deBounce()
 {
-    unsigned long now = millis();
-    do
+    unsigned long startTime = millis();
+    bool sensorState = digitalRead(GPIO_SENSOR_PIN);
+
+    // Wait for the sensor pin to stabilize
+    while ((millis() - startTime) <= DEBOUNCE_DELAY)
     {
-        // on bounce, reset time-out
-        if (digitalRead(GPIO_SENSOR_PIN) == LOW)
-            now = millis();
-    } while (digitalRead(GPIO_SENSOR_PIN) == LOW ||
-             (millis() - now) <= DEBOUNCE_DELAY);
+        bool currentState = digitalRead(GPIO_SENSOR_PIN);
+        if (currentState != sensorState)
+        {
+            // State changed, reset the timer
+            startTime = millis();
+            sensorState = currentState;
+        }
+    }
 }
 
 /*
@@ -143,7 +158,6 @@ void TxRadio::deepSleepEnable(unsigned long &currentTime)
     if (currentTime - this->lastInterruptTime > DEEPSLEEP_MINIMUM_TIME)
     {
         log_d("Enterring deepsleep");
-        this->sleepFlag = true;
         esp_deep_sleep_start();
     }
 }
@@ -154,6 +168,12 @@ void TxRadio::deepSleepEnable(unsigned long &currentTime)
 void TxRadio::pulseISR()
 {
     pulseFlag = true; // Set flag for the main loop to handle
+}
+
+void RTC_IRAM_ATTR esp_wake_deep_sleep(void)
+{
+    esp_default_wake_deep_sleep();
+    sleepFlag = true;
 }
 
 TxRadio::~TxRadio() {}
