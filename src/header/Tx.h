@@ -24,7 +24,7 @@ private:
     static void pulseISR(void);
     void sendPackage(void);
     String assembleMessagePayload(void);
-    void incrementPulseCounter(unsigned long &);
+    const void incrementPulseCounter(const unsigned long &);
 
     void deepSleepEnable(unsigned long &);
     void deBounce(void);
