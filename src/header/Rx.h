@@ -119,11 +119,10 @@ void RxRadio::handleRadio()
         String message;
         int state = this->radioLoRa.readData(message);
         receivedFlag = false;
-        log_d("Recieved new message.");
 
         if (state == RADIOLIB_ERR_NONE)
         {
-            // log_d("Recieved message: %s ", str.c_str());
+            log_d("Recieved message: %s ", str.c_str());
             mqttPublish(message.c_str());
         }
         else if (state == RADIOLIB_ERR_CRC_MISMATCH)
