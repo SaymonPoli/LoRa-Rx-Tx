@@ -11,12 +11,12 @@ struct data
 class TxRadio : public Radio
 {
 private:
-    unsigned long pulseCountSnapShot{0}, currentTime{0};
+    unsigned long pulseCountSnapShot = 0, currentTime = 0;
     static volatile bool pulseFlag;                  // Flag for pulse detection
     static unsigned long lastInterruptTime;          // Last time the GPIO pin was activated
     static std::vector<std::pair<unsigned long, std::size_t>> pulseCounter; // Sensor counter
     long counter = 0;
-    uint64_t lastTxTime{0};
+    uint64_t lastTxTime = 0;
 
     /*
         Radio methods

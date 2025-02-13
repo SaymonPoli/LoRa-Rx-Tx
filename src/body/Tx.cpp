@@ -9,7 +9,7 @@
 #if CONFIG_IDF_TARGET_ESP32
 #define THRESHOLD 40   // Bigger the value more sensitivity
 #else                  // ESP32-S2 and ESP32-S3 or other defalt chips
-#define THRESHOLD 5000 // Lower the value more sensitivity
+#define THRESHOLD 4000 // Lower the value more sensitivity
 #endif
 
 touch_pad_t touchPin = TOUCH_PAD_NUM7;
@@ -33,7 +33,7 @@ void TxRadio::setupRadio()
     int state = this->setRadioConfig();
 
     log_d("[SX1262] Sending first packet ...");
-    int transmissionState = radioLoRa.startTransmit("TimeSync::" + String(millis()) + "::" + String(getEspAdress()));
+    int16_t transmissionState = radioLoRa.startTransmit("TimeSync::" + String(millis()) + "::" + String(getEspAdress()));
     this->StatusReport(transmissionState, "First Transmission");
 
     // Attach interrupt to GPIO pin
@@ -96,7 +96,7 @@ const void TxRadio::incrementPulseCounter(const unsigned long &currentTime)
 */
 void TxRadio::sendPackage(void)
 {
-    int transmissionState = this->radioLoRa.startTransmit(assembleMessagePayload().c_str());
+    int16_t transmissionState = this->radioLoRa.startTransmit(assembleMessagePayload().c_str());
     StatusReport(transmissionState, "Send Package");
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
 
