@@ -122,7 +122,7 @@ void RxRadio::handleRadio()
 
         if (state == RADIOLIB_ERR_NONE)
         {
-            log_d("Recieved message: %s ", str.c_str());
+            log_d("Recieved message: %s ", message.c_str());
             mqttPublish(message.c_str());
         }
         else if (state == RADIOLIB_ERR_CRC_MISMATCH)

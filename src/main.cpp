@@ -22,6 +22,10 @@ RxRadio *radio = new RxRadio;
 #endif
 
 void setup() {
+
+#ifdef TX_DEVICE
+  setCpuFrequencyMhz(40);
+#endif
   Serial.begin(115200);
   while (!Serial)
   {
