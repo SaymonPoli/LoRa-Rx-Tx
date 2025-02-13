@@ -28,7 +28,7 @@ TxRadio::TxRadio() {}
 */
 void TxRadio::setupRadio()
 {
-    touchSleepWakeUpEnable(T7, THRESHOLD);
+    // touchSleepWakeUpEnable(T7, THRESHOLD);
 
     int state = this->setRadioConfig();
 
@@ -41,7 +41,7 @@ void TxRadio::setupRadio()
     attachInterrupt(digitalPinToInterrupt(GPIO_SENSOR_PIN), pulseISR, RISING);
 
     // If coming back from sleep add a pulse to the counter
-    if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_TOUCHPAD)
+    if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0)
     {
         log_d("returning from deepsleep");
         incrementPulseCounter(millis());
@@ -130,6 +130,7 @@ void TxRadio::deepSleepEnable(unsigned long &currentTime)
 {
     if (currentTime - this->lastInterruptTime > DEEPSLEEP_MINIMUM_TIME)
     {
+        esp_sleep_enable_ext0_wakeup(GPIO_NUM_0, 0);
         log_d("Enterring deepsleep");
         esp_deep_sleep_start();
     }
